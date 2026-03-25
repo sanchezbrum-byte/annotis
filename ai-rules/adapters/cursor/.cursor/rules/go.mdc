@@ -1,0 +1,95 @@
+---
+description: Go AI Rules
+globs: ["**/*.go"]
+alwaysApply: false
+---
+
+# Go AI Rules
+
+> Full reference: `go/style-guide.md`
+
+---
+
+## Formatting (gofmt)
+
+- gofmt manages ALL formatting — no debates, no configuration
+- Indentation: **tabs** (enforced by gofmt)
+- Line length: no hard limit; keep < 100 chars as soft target
+- Import groups: stdlib → external → internal (goimports manages)
+
+## Naming (Effective Go)
+
+| Concept | Style | Example |
+|---------|-------|---------|
+| Exported | `PascalCase` | `OrderService`, `ProcessPayment` |
+| Unexported | `camelCase` | `orderRepo`, `processPayment` |
+| Packages | `lowercase` (no underscores) | `orders`, `payment` |
+| Interfaces (1 method) | Method + `er` | `Reader`, `Writer`, `Closer` |
+| Error vars | `Err` prefix | `ErrOrderNotFound` |
+| Acronyms | consistent case | `userID`, `orderURL`, `parseJSON` |
+
+## Error Handling
+
+```go
+// ✅ Always handle errors — never ignore with _
+result, err := repo.FindByID(ctx, id)
+if err != nil {
+    return fmt.Errorf("finding order %s: %w", id, err)
+}
+if result == nil {
+    return ErrOrderNotFound
+}
+
+// ❌ NEVER
+result, _ := repo.FindByID(ctx, id)  // ignores error
+```
+
+## Function Design
+
+- Max ~40 lines per function
+- Accept interfaces, return concrete types (Uber Go Style)
+- Error is always the last return value
+- Small, focused interfaces (prefer 1–3 methods)
+- Context is first parameter for all cancelable operations
+
+```go
+// ✅ Accept interface, return concrete
+func NewOrderService(repo OrderRepository, gw PaymentGateway) *OrderService { ... }
+
+// ✅ Context first, error last
+func (s *Service) ProcessPayment(ctx context.Context, id, token string) (*Confirmation, error)
+```
+
+## Concurrency
+
+```go
+// ✅ goroutine ownership: document who stops it
+// ✅ always run tests with -race flag
+// ✅ use sync.Mutex for shared state; channels for communication
+// ✅ use context for cancellation propagation
+// ❌ never spawn goroutine without knowing how it terminates
+```
+
+## Security
+
+```go
+// ✅ Parameterized SQL
+row := pool.QueryRow(ctx, "SELECT * FROM users WHERE email = $1", email)
+
+// ❌ String interpolation in SQL
+query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email) // SQLi!
+
+// ✅ Secrets from environment
+dbURL := os.Getenv("DATABASE_URL")
+if dbURL == "" { log.Fatal("DATABASE_URL must be set") }
+```
+
+## Tooling
+
+```bash
+goimports -l -w .     # format + organize imports
+go vet ./...          # built-in analysis
+staticcheck ./...     # advanced static analysis
+go test -race ./...   # tests with race detector
+govulncheck ./...     # security vulnerability scan
+```

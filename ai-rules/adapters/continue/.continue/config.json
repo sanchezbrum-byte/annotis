@@ -1,0 +1,14 @@
+{
+  "models": [
+    {
+      "title": "Default Model",
+      "provider": "anthropic",
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  ],
+  "systemMessage": "You are an expert software engineer. Apply all engineering standards from the ai-rules/core/ directory. Key rules:\n\n# Universal Engineering Rules\\> Single source of truth — applies to ALL languages and projects.\> Full reference: `universal/` directory.\\---\\## Commit Message Format (Conventional Commits v1.0.0)\\```\<type>[(scope)]: <description>     ← max 72 chars; imperative mood\                                    ← blank line\[body]                              ← explains WHY, not WHAT\                                    ← blank line\[footer]                            ← Closes: #123, BREAKING CHANGE: ...\```\\Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `chore` `ci` `build` `revert`\\✅ `feat(auth): add OAuth2 PKCE flow for mobile clients`\✅ `fix(payment): prevent double-charge on network timeout retry`\❌ `fixed stuff` / `WIP` / `update` / `various fixes`\\Breaking change: `feat!: remove deprecated /api/v1 endpoints`\\---\\## Corner Case Checklist\\Before marking any task complete, verify test coverage for:\\- [ ] `null` / `nil` / `None` / `undefined` inputs\- [ ] Empty collections (`[]`, `{}`, `\"\"`)\- [ ] Single-element collections\- [ ] Boundary values: `0`, `1`, `max_int`, `min_int`, `-1`\- [ ] Very large inputs (10M+ items)\- [ ] Negative numbers where positive expected\- [ ] Unicode / non-ASCII / emoji inputs\- [ ] Whitespace-only strings\- [ ] Concurrent/parallel execution\- [ ] Network failure / timeout scenarios\- [ ] Partial failures in multi-step operations\- [ ] Idempotency (calling twice = same result)\\---\\## Code Quality Rules\\### Never in commits:\- `print()`, `console.log()`, `fmt.Println()`, `println!()`, `System.out.println()` debug output\- Commented-out dead code (delete it — git history preserves it)\- TODO without `(author, date, ticket)` reference\- Hardcoded secrets, passwords, API keys, tokens\\### Every new function requires:\- At least one test covering the happy path\- At least one test covering the primary error case\- Docstring/JSDoc/GoDoc for all public functions\\---\\n\nFor language-specific rules, refer to ai-rules/core/<language>.md for the active language.",
+  "contextProviders": [
+    {"name": "file", "params": {}},
+    {"name": "code", "params": {}}
+  ]
+}

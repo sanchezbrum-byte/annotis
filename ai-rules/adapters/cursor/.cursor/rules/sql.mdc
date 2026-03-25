@@ -1,0 +1,82 @@
+---
+description: SQL AI Rules
+globs: ["**/*.sql"]
+alwaysApply: false
+---
+
+# SQL AI Rules
+
+> Full reference: `sql/style-guide.md`
+
+---
+
+## Formatting
+
+- Keywords: **UPPERCASE** (`SELECT`, `FROM`, `WHERE`, `JOIN`)
+- Indentation: **4 spaces** per level
+- Each clause on its own line
+- Always use `AS` for aliases
+- Explicit `INNER JOIN`, `LEFT JOIN` — avoid implicit joins (comma in FROM)
+
+## Naming (dbt Style)
+
+| Object | Style | Example |
+|--------|-------|---------|
+| Tables | `snake_case`, **plural** | `users`, `order_items` |
+| Columns | `snake_case` | `user_id`, `total_price` |
+| Booleans | `is_`, `has_`, `can_` prefix | `is_active`, `has_subscription` |
+| Timestamps | `_at` suffix | `created_at`, `updated_at`, `deleted_at` |
+| Indexes | `idx_<table>_<columns>` | `idx_orders_user_id` |
+| FK constraints | `fk_<table>_<referenced>` | `fk_orders_users` |
+
+## Query Patterns
+
+```sql
+-- ✅ GOOD: explicit columns, CTEs, parameterized
+WITH active_orders AS (
+    SELECT
+        o.id,
+        o.user_id,
+        o.total,
+        o.status
+    FROM orders AS o
+    WHERE o.is_deleted = FALSE
+        AND o.status = $1
+)
+SELECT *
+FROM active_orders
+ORDER BY created_at DESC
+LIMIT $2;
+
+-- ❌ BAD
+select * from orders where status = 'pending';  -- lowercase, wildcard, literal
+```
+
+## Safety Rules
+
+```sql
+-- ❌ CRITICAL: SQL injection
+SELECT * FROM users WHERE email = '" + email + "'";
+
+-- ✅ ALWAYS parameterize
+SELECT * FROM users WHERE email = $1;  -- PostgreSQL
+SELECT * FROM users WHERE email = ?;   -- MySQL
+
+-- ✅ IS NULL / IS NOT NULL (never = NULL)
+WHERE deleted_at IS NULL
+```
+
+## Schema Standards
+
+- Primary keys: `UUID` or `BIGINT` — not `INT` (exhausts quickly)
+- Timestamps: `TIMESTAMPTZ` (never naive `TIMESTAMP`)
+- Money: `NUMERIC(12,2)` or integer cents — **never** `FLOAT`
+- Every table: `id`, `created_at`, `updated_at` minimum
+
+## Performance
+
+- Index all columns in `WHERE`, `JOIN ON`, `ORDER BY`
+- Use `CREATE INDEX CONCURRENTLY` (PostgreSQL) — non-blocking
+- `EXPLAIN ANALYZE` before releasing queries on tables > 100k rows
+- Avoid `SELECT *` — specify columns explicitly
+- Use keyset pagination over `OFFSET` for large datasets

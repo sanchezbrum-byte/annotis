@@ -1,0 +1,97 @@
+# Bash AI Rules
+
+> Full reference: `bash/style-guide.md`
+
+---
+
+## Required Boilerplate
+
+Every bash script MUST begin with:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+# -e: exit on error
+# -u: error on unset variables
+# -o pipefail: pipe failures are caught
+```
+
+## Formatting (shfmt)
+
+- Indentation: **2 spaces**
+- Line limit: **80 chars** (soft)
+
+## Naming
+
+| Concept | Style | Example |
+|---------|-------|---------|
+| Functions | `snake_case` | `deploy_to_env`, `get_config_value` |
+| Local variables | `snake_case` | `user_id`, `output_file` |
+| Global constants | `UPPER_SNAKE_CASE` | `MAX_RETRIES`, `DEPLOY_TIMEOUT` |
+| Environment vars | `UPPER_SNAKE_CASE` | `DATABASE_URL`, `API_KEY` |
+
+## Always Quote Variables
+
+```bash
+# ✅ ALWAYS quote
+cp "${source_file}" "${dest_dir}"
+if [[ "${name}" == "alice" ]]; then
+
+# ❌ NEVER unquoted (word splitting / globbing)
+cp $source_file $dest_dir
+if [ $name = "alice" ]; then
+```
+
+## Conditionals
+
+```bash
+# ✅ [[ ]] in bash (not [ ])
+if [[ "${count}" -gt 0 && "${status}" == "active" ]]; then
+
+# ✅ $() not backticks
+result="$(some_command "${arg}")"
+```
+
+## Functions
+
+```bash
+# ✅ local variables, validate args, errors to stderr
+deploy() {
+  local environment="${1:?Usage: deploy <environment>}"
+  local version="${2:?Usage: deploy <environment> <version>}"
+
+  if [[ ! "${environment}" =~ ^(staging|production)$ ]]; then
+    echo "ERROR: Invalid environment: ${environment}" >&2
+    return 1
+  fi
+  # ...
+}
+```
+
+## Security
+
+```bash
+# ❌ NEVER eval user input — arbitrary code execution
+eval "${user_input}"
+
+# ✅ Whitelist validation
+case "${env}" in
+  staging|production) deploy "${env}" ;;
+  *) echo "ERROR: Invalid environment" >&2; exit 1 ;;
+esac
+
+# ✅ Temp files with mktemp + trap cleanup
+tmp="$(mktemp)"
+trap 'rm -f "${tmp}"' EXIT
+
+# ✅ Secrets from environment, never hardcoded
+API_KEY="${API_KEY:?API_KEY must be set}"
+```
+
+## Tooling
+
+```bash
+shellcheck myscript.sh        # lint (mandatory, runs in CI)
+shfmt -i 2 -w myscript.sh    # format
+bats tests/                   # test
+```
