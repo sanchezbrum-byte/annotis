@@ -1,0 +1,43 @@
+# Standards submodule — local only, never committed
+.standards/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# App runtime data
+*.db
+sessions/
+exports/
+
+# Model checkpoints
+*.pth
+*.pt
+checkpoints/
