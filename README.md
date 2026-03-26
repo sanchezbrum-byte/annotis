@@ -9,12 +9,25 @@ Fully offline. No cloud dependencies.
 
 🚧 Under active development — MVP in progress.
 
-## Quickstart (once released)
+## Quickstart
+
+> **macOS 12 Monterey**: Python 3.13 has no pre-built wheels for OpenCV or
+> PyQt6 6.5+. Use Python 3.11 and the pinned versions below.
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+# 1. Create a Python 3.11 venv (brew install python@3.11 if needed)
+python3.11 -m venv .venv && source .venv/bin/activate
+
+# 2. Install dependencies with pre-built wheels (no compilation)
+pip install "opencv-python==4.10.0.84" --only-binary=:all:
+pip install "PyQt6==6.4.2" "PyQt6-Qt6==6.4.2" --only-binary=:all:
+pip install Pillow piexif numpy scipy scikit-learn
 pip install -e ".[dev]"
+
+# 3. Run tests
 pytest
+
+# 4. Launch the app
 annotis
 ```
 
