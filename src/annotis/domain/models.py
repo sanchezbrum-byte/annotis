@@ -101,11 +101,11 @@ class QCMetrics:
     Attribute names match the column names in dataset_metadata.csv.
     """
 
-    sharpness: float = 0.0        # Laplacian variance — Pech-Pacheco (2000)
+    sharpness: float = 0.0  # Laplacian variance — Pech-Pacheco (2000)
     brightness_mean: float = 0.0  # Mean gray intensity in [0, 255]
-    brightness_std: float = 0.0   # Std-dev of gray intensities
-    contrast: float = 0.0         # RMS contrast = brightness_std
-    noise_estimate: float = 0.0   # Immerkaer (1996) σ estimate
+    brightness_std: float = 0.0  # Std-dev of gray intensities
+    contrast: float = 0.0  # RMS contrast = brightness_std
+    noise_estimate: float = 0.0  # Immerkaer (1996) σ estimate
     saturation_mean: float = 0.0  # Mean HSV saturation in [0, 255]
 
     def quality_score(self) -> float:
@@ -143,12 +143,8 @@ class ImageRecord:
     is_annotated: bool = False
     last_modified: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     # Private undo/redo stacks — not serialised; rebuilt from scratch on load.
-    _undo_stack: list[list[Annotation]] = field(
-        default_factory=list, repr=False
-    )
-    _redo_stack: list[list[Annotation]] = field(
-        default_factory=list, repr=False
-    )
+    _undo_stack: list[list[Annotation]] = field(default_factory=list, repr=False)
+    _redo_stack: list[list[Annotation]] = field(default_factory=list, repr=False)
 
     def push_undo_snapshot(self) -> None:
         """Capture current annotations for undo.  Clears redo stack.  O(m)."""

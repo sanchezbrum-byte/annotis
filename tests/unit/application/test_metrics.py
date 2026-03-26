@@ -11,7 +11,7 @@ from annotis.domain.models import Annotation, BoundingBox, ImageMetadata, ImageR
 def _record(width: int = 1000, height: int = 1000) -> ImageRecord:
     """Build a minimal ImageRecord with given dimensions."""
     return ImageRecord(
-        path=Path("/tmp/img.jpg"),
+        path=Path("img.jpg"),
         metadata=ImageMetadata(width=width, height=height),
     )
 

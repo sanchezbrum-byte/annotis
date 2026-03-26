@@ -19,7 +19,10 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import numpy as np
 
 import piexif
 from PIL import Image as PILImage
@@ -48,10 +51,7 @@ def discover_images(folder: Path) -> list[Path]:
     """
     if not folder.exists() or not folder.is_dir():
         raise ValueError(f"Not a valid directory: {folder}")
-    paths = [
-        p for p in folder.iterdir()
-        if p.suffix.lower() in SUPPORTED_EXTENSIONS
-    ]
+    paths = [p for p in folder.iterdir() if p.suffix.lower() in SUPPORTED_EXTENSIONS]
     return sorted(paths)
 
 
@@ -186,11 +186,7 @@ def _extract_exif(img: PILImage.Image) -> dict[str, Any]:
             if not isinstance(ifd, dict):
                 continue
             for tag, val in ifd.items():
-                key = (
-                    piexif.TAGS.get(ifd_name, {})
-                    .get(tag, {})
-                    .get("name", str(tag))
-                )
+                key = piexif.TAGS.get(ifd_name, {}).get(tag, {}).get("name", str(tag))
                 result[key] = (
                     val.decode("utf-8", errors="replace")
                     if isinstance(val, bytes)
@@ -204,9 +200,19 @@ def _extract_exif(img: PILImage.Image) -> dict[str, Any]:
 def _bit_depth_from_mode(mode: str) -> int:
     """Map a PIL image mode string to bits-per-channel.  O(1)."""
     mapping: dict[str, int] = {
-        "1": 1, "L": 8, "P": 8, "RGB": 8, "RGBA": 8,
-        "CMYK": 8, "YCbCr": 8, "LAB": 8, "HSV": 8,
-        "I": 32, "F": 32, "I;16": 16, "I;16B": 16,
+        "1": 1,
+        "L": 8,
+        "P": 8,
+        "RGB": 8,
+        "RGBA": 8,
+        "CMYK": 8,
+        "YCbCr": 8,
+        "LAB": 8,
+        "HSV": 8,
+        "I": 32,
+        "F": 32,
+        "I;16": 16,
+        "I;16B": 16,
     }
     return mapping.get(mode, 8)
 
@@ -214,9 +220,16 @@ def _bit_depth_from_mode(mode: str) -> int:
 def _color_space_from_mode(mode: str) -> str:
     """Map a PIL image mode string to a human-readable colour-space name.  O(1)."""
     mapping: dict[str, str] = {
-        "1": "BINARY", "L": "GRAYSCALE", "P": "PALETTE",
-        "RGB": "RGB", "RGBA": "RGBA", "CMYK": "CMYK",
-        "YCbCr": "YCBCR", "LAB": "LAB", "F": "FLOAT32", "I": "INT32",
+        "1": "BINARY",
+        "L": "GRAYSCALE",
+        "P": "PALETTE",
+        "RGB": "RGB",
+        "RGBA": "RGBA",
+        "CMYK": "CMYK",
+        "YCbCr": "YCBCR",
+        "LAB": "LAB",
+        "F": "FLOAT32",
+        "I": "INT32",
     }
     return mapping.get(mode, mode)
 
@@ -224,14 +237,12 @@ def _color_space_from_mode(mode: str) -> str:
 def _creation_date(path: Path) -> datetime | None:
     """Return the filesystem creation timestamp for *path*.  O(1)."""
     try:
-        return datetime.fromtimestamp(
-            path.stat().st_ctime, tz=timezone.utc
-        )
+        return datetime.fromtimestamp(path.stat().st_ctime, tz=timezone.utc)
     except OSError:
         return None
 
 
-def _estimate_noise(gray: "np.ndarray") -> float:  # type: ignore[type-arg]
+def _estimate_noise(gray: np.ndarray) -> float:  # type: ignore[type-arg]
     """Estimate noise via the Immerkaer (1996) Laplacian method.  O(w*h).
 
     σ ≈ sqrt(π/6) * mean(|H * I|)  where H is the 3×3 Laplacian kernel.

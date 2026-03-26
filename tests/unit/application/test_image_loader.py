@@ -12,11 +12,6 @@ from pathlib import Path
 
 import pytest
 
-_CV2_AVAILABLE = importlib.util.find_spec("cv2") is not None
-_skip_without_cv2 = pytest.mark.skipif(
-    not _CV2_AVAILABLE, reason="opencv-python not installed"
-)
-
 from annotis.application.image_loader import (
     compute_qc_metrics,
     discover_images,
@@ -26,6 +21,10 @@ from annotis.application.image_loader import (
 )
 from annotis.domain.errors import ImageLoadError, UnsupportedFormatError
 
+_CV2_AVAILABLE = importlib.util.find_spec("cv2") is not None
+_skip_without_cv2 = pytest.mark.skipif(
+    not _CV2_AVAILABLE, reason="opencv-python not installed"
+)
 
 # ---------------------------------------------------------------------------
 # discover_images
@@ -85,9 +84,7 @@ class TestExtractMetadata:
 
         assert meta.file_size_bytes > 0
 
-    def test_raises_image_load_error_on_corrupted_file(
-        self, tmp_path: Path
-    ) -> None:
+    def test_raises_image_load_error_on_corrupted_file(self, tmp_path: Path) -> None:
         corrupt = tmp_path / "bad.jpg"
         corrupt.write_bytes(b"\xff\xd8 not a real jpeg")
 
@@ -107,16 +104,12 @@ class TestComputeQcMetrics:
 
         assert qc.sharpness >= 0.0
 
-    def test_brightness_mean_is_in_valid_pixel_range(
-        self, tmp_jpeg: Path
-    ) -> None:
+    def test_brightness_mean_is_in_valid_pixel_range(self, tmp_jpeg: Path) -> None:
         qc = compute_qc_metrics(tmp_jpeg)
 
         assert 0.0 <= qc.brightness_mean <= 255.0
 
-    def test_raises_image_load_error_for_missing_file(
-        self, tmp_path: Path
-    ) -> None:
+    def test_raises_image_load_error_for_missing_file(self, tmp_path: Path) -> None:
         with pytest.raises(ImageLoadError):
             compute_qc_metrics(tmp_path / "ghost.jpg")
 
@@ -159,9 +152,7 @@ class TestLoadFolder:
 
         assert len(records) == 3
 
-    def test_skips_unreadable_files_without_raising(
-        self, tmp_path: Path
-    ) -> None:
+    def test_skips_unreadable_files_without_raising(self, tmp_path: Path) -> None:
         from PIL import Image as PILImage
 
         folder = tmp_path / "imgs"
@@ -173,7 +164,5 @@ class TestLoadFolder:
 
         assert len(records) == 1
 
-    def test_returns_empty_list_for_empty_directory(
-        self, tmp_path: Path
-    ) -> None:
+    def test_returns_empty_list_for_empty_directory(self, tmp_path: Path) -> None:
         assert load_folder(tmp_path) == []

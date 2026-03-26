@@ -36,9 +36,7 @@ def compute_annotation_stats(record: ImageRecord) -> AnnotationStats:
     avg_area_px = total_fg / len(areas)
     avg_area_pct = (avg_area_px / img_area * 100.0) if img_area > 0.0 else 0.0
     foreground_ratio = min(total_fg / img_area, 1.0) if img_area > 0.0 else 0.0
-    class_dist = dict(
-        collections.Counter(a.class_label for a in bbox_anns)
-    )
+    class_dist = dict(collections.Counter(a.class_label for a in bbox_anns))
 
     return AnnotationStats(
         object_count=len(bbox_anns),

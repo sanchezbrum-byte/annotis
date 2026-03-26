@@ -18,7 +18,6 @@ from annotis.domain.models import (
     Session,
 )
 
-
 # ---------------------------------------------------------------------------
 # BoundingBox
 # ---------------------------------------------------------------------------
@@ -120,7 +119,7 @@ class TestQCMetricsQualityScore:
 
 class TestImageRecordUndoRedo:
     def _make_record(self) -> ImageRecord:
-        return ImageRecord(path=Path("/tmp/img.jpg"))
+        return ImageRecord(path=Path("img.jpg"))
 
     def test_undo_on_empty_stack_returns_false(self) -> None:
         record = self._make_record()
@@ -191,15 +190,15 @@ class TestImageRecordUndoRedo:
 
 class TestSession:
     def test_annotated_count_counts_only_annotated_records(self) -> None:
-        r1 = ImageRecord(path=Path("/tmp/a.jpg"), is_annotated=True)
-        r2 = ImageRecord(path=Path("/tmp/b.jpg"), is_annotated=False)
+        r1 = ImageRecord(path=Path("a.jpg"), is_annotated=True)
+        r2 = ImageRecord(path=Path("b.jpg"), is_annotated=False)
 
         session = Session(images=[r1, r2])
 
         assert session.annotated_count == 1
 
     def test_total_count_equals_length_of_images_list(self) -> None:
-        session = Session(images=[ImageRecord(path=Path("/tmp/a.jpg"))])
+        session = Session(images=[ImageRecord(path=Path("a.jpg"))])
 
         assert session.total_count == 1
 

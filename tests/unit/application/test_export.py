@@ -30,14 +30,14 @@ def _make_session(with_annotation: bool = True) -> Session:
             )
         ]
     record = ImageRecord(
-        path=Path("/tmp/test.jpg"),
+        path=Path("test.jpg"),
         metadata=ImageMetadata(width=800, height=600, channels=3),
         is_annotated=with_annotation,
         annotations=annotations,
     )
     return Session(
         project_name="test",
-        image_folder=Path("/tmp"),
+        image_folder=Path("."),
         class_labels=["cat", "dog"],
         images=[record],
     )
@@ -93,13 +93,13 @@ class TestExportCoco:
 
     def test_annotation_without_bbox_raises_invalid_annotation_error(self) -> None:
         session = _make_session(with_annotation=False)
-        session.images[0].annotations = [
-            Annotation(class_label="cat", bbox=None)
-        ]
+        session.images[0].annotations = [Annotation(class_label="cat", bbox=None)]
 
-        with tempfile.TemporaryDirectory() as tmp:
-            with pytest.raises(InvalidAnnotationError):
-                export_coco(session, Path(tmp))
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            pytest.raises(InvalidAnnotationError),
+        ):
+            export_coco(session, Path(tmp))
 
     def test_is_idempotent_when_called_twice(self) -> None:
         session = _make_session()
@@ -161,8 +161,12 @@ class TestExportMetadataCsv:
     def test_csv_contains_all_required_columns(self) -> None:
         session = _make_session()
         required = {
-            "image_id", "file_name", "sharpness",
-            "object_count", "quality_score", "is_annotated",
+            "image_id",
+            "file_name",
+            "sharpness",
+            "object_count",
+            "quality_score",
+            "is_annotated",
         }
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -183,10 +187,12 @@ class TestExportMetadataCsv:
     def test_raises_export_error_on_empty_session(self) -> None:
         session = Session(
             project_name="empty",
-            image_folder=Path("/tmp"),
+            image_folder=Path("."),
             images=[],
         )
 
-        with tempfile.TemporaryDirectory() as tmp:
-            with pytest.raises(ExportError, match="No images"):
-                export_metadata_csv(session, Path(tmp))
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            pytest.raises(ExportError, match="No images"),
+        ):
+            export_metadata_csv(session, Path(tmp))

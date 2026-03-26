@@ -19,7 +19,6 @@ from pathlib import Path
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QKeySequence, QPixmap, QShortcut
 from PyQt6.QtWidgets import (
-    QApplication,
     QComboBox,
     QFileDialog,
     QHBoxLayout,
@@ -38,7 +37,7 @@ from PyQt6.QtWidgets import (
 from annotis.adapters.session_store import SessionStore
 from annotis.application.export import export_coco, export_metadata_csv, export_yolo
 from annotis.application.metrics import compute_annotation_stats
-from annotis.domain.models import Annotation, BoundingBox, AnnotationType, Session
+from annotis.domain.models import Annotation, AnnotationType, BoundingBox, Session
 from annotis.ui.canvas import AnnotationCanvas
 
 logger = logging.getLogger(__name__)
@@ -224,9 +223,7 @@ class MainWindow(QMainWindow):
         self._refresh_ann_list()
         self._refresh_stats()
 
-    def _on_bbox_completed(
-        self, x: float, y: float, w: float, h: float
-    ) -> None:
+    def _on_bbox_completed(self, x: float, y: float, w: float, h: float) -> None:
         if self._session is None or self._current_idx < 0:
             return
         record = self._session.images[self._current_idx]
@@ -358,7 +355,8 @@ class MainWindow(QMainWindow):
             bbox_info = (
                 f"x={ann.bbox.x:.0f} y={ann.bbox.y:.0f} "
                 f"w={ann.bbox.width:.0f} h={ann.bbox.height:.0f}"
-                if ann.bbox else "no bbox"
+                if ann.bbox
+                else "no bbox"
             )
             self._ann_list.addItem(f"[{ann.class_label}] {bbox_info}")
 
@@ -404,9 +402,7 @@ class MainWindow(QMainWindow):
             return
         try:
             result = export_fn(self._session, Path(dest))  # type: ignore[operator]
-            QMessageBox.information(
-                self, "Export complete", f"Saved to:\n{result}"
-            )
+            QMessageBox.information(self, "Export complete", f"Saved to:\n{result}")
         except Exception as exc:
             QMessageBox.critical(self, "Export failed", str(exc))
 

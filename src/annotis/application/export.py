@@ -40,9 +40,7 @@ def export_coco(session: Session, output_dir: Path) -> Path:
     coco = _build_coco_dict(session)
     dest = output_dir / "annotations.coco.json"
     try:
-        dest.write_text(
-            json.dumps(coco, indent=2, default=str), encoding="utf-8"
-        )
+        dest.write_text(json.dumps(coco, indent=2, default=str), encoding="utf-8")
     except OSError as exc:
         raise ExportError(f"Cannot write COCO file: {exc}") from exc
     return dest
@@ -74,9 +72,7 @@ def export_yolo(session: Session, output_dir: Path) -> Path:
         try:
             label_file.write_text("\n".join(lines), encoding="utf-8")
         except OSError as exc:
-            raise ExportError(
-                f"Cannot write YOLO label {label_file}: {exc}"
-            ) from exc
+            raise ExportError(f"Cannot write YOLO label {label_file}: {exc}") from exc
 
     classes_file = output_dir / "classes.txt"
     classes_file.write_text("\n".join(session.class_labels), encoding="utf-8")
@@ -126,9 +122,7 @@ def _build_coco_dict(session: Session) -> dict[str, Any]:
         {"id": i + 1, "name": label, "supercategory": "none"}
         for i, label in enumerate(session.class_labels)
     ]
-    class_to_id = {
-        label: i + 1 for i, label in enumerate(session.class_labels)
-    }
+    class_to_id = {label: i + 1 for i, label in enumerate(session.class_labels)}
     coco_images: list[dict[str, Any]] = []
     coco_annotations: list[dict[str, Any]] = []
     ann_id = 1

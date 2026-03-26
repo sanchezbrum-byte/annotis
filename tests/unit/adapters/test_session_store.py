@@ -23,7 +23,7 @@ def _make_store(tmp_path: Path) -> SessionStore:
 
 def _make_session() -> Session:
     record = ImageRecord(
-        path=Path("/tmp/img.jpg"),
+        path=Path("img.jpg"),
         metadata=ImageMetadata(width=800, height=600, channels=3),
         is_annotated=True,
         annotations=[
@@ -35,16 +35,14 @@ def _make_session() -> Session:
     )
     return Session(
         project_name="my project",
-        image_folder=Path("/tmp/images"),
+        image_folder=Path("images"),
         class_labels=["cat", "dog"],
         images=[record],
     )
 
 
 class TestSessionStoreSave:
-    def test_save_does_not_raise_for_valid_session(
-        self, tmp_path: Path
-    ) -> None:
+    def test_save_does_not_raise_for_valid_session(self, tmp_path: Path) -> None:
         store = _make_store(tmp_path)
         session = _make_session()
 
@@ -52,9 +50,7 @@ class TestSessionStoreSave:
 
         store.close()
 
-    def test_save_is_idempotent_when_called_twice(
-        self, tmp_path: Path
-    ) -> None:
+    def test_save_is_idempotent_when_called_twice(self, tmp_path: Path) -> None:
         store = _make_store(tmp_path)
         session = _make_session()
         store.save(session)
@@ -97,9 +93,7 @@ class TestSessionStoreLoad:
         assert len(restored.images) == 1
         store.close()
 
-    def test_load_restores_annotation_class_label(
-        self, tmp_path: Path
-    ) -> None:
+    def test_load_restores_annotation_class_label(self, tmp_path: Path) -> None:
         store = _make_store(tmp_path)
         original = _make_session()
         store.save(original)
@@ -122,9 +116,7 @@ class TestSessionStoreLoad:
         assert bbox.width == 100.0
         store.close()
 
-    def test_load_raises_session_not_found_for_unknown_id(
-        self, tmp_path: Path
-    ) -> None:
+    def test_load_raises_session_not_found_for_unknown_id(self, tmp_path: Path) -> None:
         store = _make_store(tmp_path)
 
         with pytest.raises(SessionNotFoundError):
@@ -140,9 +132,7 @@ class TestSessionStoreListSessions:
         assert store.list_sessions() == []
         store.close()
 
-    def test_returns_one_entry_per_saved_session(
-        self, tmp_path: Path
-    ) -> None:
+    def test_returns_one_entry_per_saved_session(self, tmp_path: Path) -> None:
         store = _make_store(tmp_path)
         store.save(_make_session())
         store.save(_make_session())

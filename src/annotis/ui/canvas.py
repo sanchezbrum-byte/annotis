@@ -11,24 +11,28 @@ by manual integration smoke-tests and optional pytest-qt tests.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QCursor, QPen
+from PyQt6.QtGui import QColor, QCursor, QMouseEvent, QPen, QWheelEvent
 from PyQt6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
 )
 
-if TYPE_CHECKING:
-    from PyQt6.QtGui import QMouseEvent, QWheelEvent
-
 logger = logging.getLogger(__name__)
 
 _PALETTE = [
-    "#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4",
-    "#42d4f4", "#f032e6", "#bfef45", "#fabed4", "#469990",
+    "#e6194b",
+    "#3cb44b",
+    "#4363d8",
+    "#f58231",
+    "#911eb4",
+    "#42d4f4",
+    "#f032e6",
+    "#bfef45",
+    "#fabed4",
+    "#469990",
 ]
 
 
@@ -57,7 +61,7 @@ class AnnotationCanvas(QGraphicsView):
         self._class_colors: dict[str, QColor] = {}
         self._next_color_idx = 0
 
-    def load_pixmap(self, pixmap_item: "QGraphicsPixmapItem") -> None:  # noqa: F821  # type: ignore[name-defined]
+    def load_pixmap(self, pixmap_item: QGraphicsPixmapItem) -> None:  # type: ignore[name-defined]  # noqa: F821
         """Replace the current image with *pixmap_item*.
 
         Args:
@@ -107,12 +111,12 @@ class AnnotationCanvas(QGraphicsView):
     # Qt event overrides
     # ------------------------------------------------------------------
 
-    def mousePressEvent(self, event: "QMouseEvent") -> None:  # type: ignore[override]
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]
         if event.button() == Qt.MouseButton.LeftButton:
             self._draw_start = self.mapToScene(event.pos())
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event: "QMouseEvent") -> None:  # type: ignore[override]
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]
         if self._draw_start is not None:
             current = self.mapToScene(event.pos())
             rect = self._make_rect(self._draw_start, current)
@@ -125,19 +129,21 @@ class AnnotationCanvas(QGraphicsView):
                 self._rubber_item.setRect(rect)
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event: "QMouseEvent") -> None:  # type: ignore[override]
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]
         if event.button() == Qt.MouseButton.LeftButton and self._draw_start is not None:
             end = self.mapToScene(event.pos())
             rect = self._make_rect(self._draw_start, end)
             if rect.width() > 2 and rect.height() > 2:
-                self.bbox_completed.emit(rect.x(), rect.y(), rect.width(), rect.height())
+                self.bbox_completed.emit(
+                    rect.x(), rect.y(), rect.width(), rect.height()
+                )
             if self._rubber_item is not None:
                 self._scene.removeItem(self._rubber_item)
                 self._rubber_item = None
             self._draw_start = None
         super().mouseReleaseEvent(event)
 
-    def wheelEvent(self, event: "QWheelEvent") -> None:  # type: ignore[override]
+    def wheelEvent(self, event: QWheelEvent) -> None:  # type: ignore[override]
         factor = 1.15 if event.angleDelta().y() > 0 else 1.0 / 1.15
         self.scale(factor, factor)
 

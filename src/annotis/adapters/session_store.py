@@ -133,10 +133,12 @@ class SessionStore:
         if row is None:
             raise SessionNotFoundError(f"Session not found: {session_id}")
 
-        columns = [d[0] for d in self._conn.execute(
-            "SELECT * FROM sessions LIMIT 0"
-        ).description or []]
-        session_dict = dict(zip(columns, row))
+        columns = [
+            d[0]
+            for d in self._conn.execute("SELECT * FROM sessions LIMIT 0").description
+            or []
+        ]
+        session_dict = dict(zip(columns, row, strict=False))
 
         records = self._load_records(session_id)
         return _session_from_row(session_dict, records)
@@ -164,9 +166,7 @@ class SessionStore:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _upsert_record(
-        self, session_id: str, record: ImageRecord
-    ) -> None:
+    def _upsert_record(self, session_id: str, record: ImageRecord) -> None:
         """Upsert a single ImageRecord row.  O(1)."""
         self._conn.execute(
             """
@@ -200,11 +200,11 @@ class SessionStore:
         rows = self._conn.execute(
             "SELECT * FROM image_records WHERE session_id = ?", (session_id,)
         ).fetchall()
-        desc = self._conn.execute(
-            "SELECT * FROM image_records LIMIT 0"
-        ).description or []
+        desc = (
+            self._conn.execute("SELECT * FROM image_records LIMIT 0").description or []
+        )
         columns = [d[0] for d in desc]
-        return [_record_from_row(dict(zip(columns, r))) for r in rows]
+        return [_record_from_row(dict(zip(columns, r, strict=False))) for r in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -214,18 +214,25 @@ class SessionStore:
 
 def _metadata_to_dict(m: ImageMetadata) -> dict[str, Any]:
     return {
-        "width": m.width, "height": m.height, "channels": m.channels,
-        "bit_depth": m.bit_depth, "color_space": m.color_space,
-        "file_size_bytes": m.file_size_bytes, "format": m.format,
+        "width": m.width,
+        "height": m.height,
+        "channels": m.channels,
+        "bit_depth": m.bit_depth,
+        "color_space": m.color_space,
+        "file_size_bytes": m.file_size_bytes,
+        "format": m.format,
         "creation_date": m.creation_date.isoformat() if m.creation_date else None,
     }
 
 
 def _qc_to_dict(q: QCMetrics) -> dict[str, float]:
     return {
-        "sharpness": q.sharpness, "brightness_mean": q.brightness_mean,
-        "brightness_std": q.brightness_std, "contrast": q.contrast,
-        "noise_estimate": q.noise_estimate, "saturation_mean": q.saturation_mean,
+        "sharpness": q.sharpness,
+        "brightness_mean": q.brightness_mean,
+        "brightness_std": q.brightness_std,
+        "contrast": q.contrast,
+        "noise_estimate": q.noise_estimate,
+        "saturation_mean": q.saturation_mean,
     }
 
 
@@ -236,7 +243,8 @@ def _ann_to_dict(a: Annotation) -> dict[str, Any]:
         "annotation_type": a.annotation_type.value,
         "bbox": (
             {"x": a.bbox.x, "y": a.bbox.y, "w": a.bbox.width, "h": a.bbox.height}
-            if a.bbox else None
+            if a.bbox
+            else None
         ),
         "polygon": a.polygon,
         "is_crowd": a.is_crowd,
@@ -268,8 +276,7 @@ def _session_from_row(
         imaging_modality=row["imaging_modality"],
         created_at=datetime.fromisoformat(row["created_at"]),
         last_saved=(
-            datetime.fromisoformat(row["last_saved"])
-            if row["last_saved"] else None
+            datetime.fromisoformat(row["last_saved"]) if row["last_saved"] else None
         ),
         images=records,
     )
@@ -297,7 +304,8 @@ def _record_from_row(row: dict[str, Any]) -> ImageRecord:
             format=md.get("format", ""),
             creation_date=(
                 datetime.fromisoformat(md["creation_date"])
-                if md.get("creation_date") else None
+                if md.get("creation_date")
+                else None
             ),
         ),
         qc_metrics=QCMetrics(
