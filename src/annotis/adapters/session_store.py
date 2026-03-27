@@ -138,7 +138,7 @@ class SessionStore:
             for d in self._conn.execute("SELECT * FROM sessions LIMIT 0").description
             or []
         ]
-        session_dict = dict(zip(columns, row, strict=False))
+        session_dict = dict(zip(columns, row, strict=True))
 
         records = self._load_records(session_id)
         return _session_from_row(session_dict, records)
@@ -204,7 +204,7 @@ class SessionStore:
             self._conn.execute("SELECT * FROM image_records LIMIT 0").description or []
         )
         columns = [d[0] for d in desc]
-        return [_record_from_row(dict(zip(columns, r, strict=False))) for r in rows]
+        return [_record_from_row(dict(zip(columns, r, strict=True))) for r in rows]
 
 
 # ---------------------------------------------------------------------------

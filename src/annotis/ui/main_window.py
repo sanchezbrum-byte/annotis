@@ -21,7 +21,9 @@ from PyQt6.QtGui import QKeySequence, QPixmap, QShortcut
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
+    QGraphicsPixmapItem,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -36,6 +38,7 @@ from PyQt6.QtWidgets import (
 
 from annotis.adapters.session_store import SessionStore
 from annotis.application.export import export_coco, export_metadata_csv, export_yolo
+from annotis.application.image_loader import load_folder
 from annotis.application.metrics import compute_annotation_stats
 from annotis.domain.models import Annotation, AnnotationType, BoundingBox, Session
 from annotis.ui.canvas import AnnotationCanvas
@@ -49,6 +52,12 @@ class MainWindow(QMainWindow):
     """Top-level application window."""
 
     def __init__(self) -> None:
+        """Initialize the main application window with three-panel layout.
+
+        Sets up the left image list, centre annotation canvas, and right
+        control panels. Configures autosave on 60-second interval. Wires
+        all keyboard shortcuts and signal connections.
+        """
         super().__init__()
         self.setWindowTitle("Annotis")
         self.resize(1400, 900)
@@ -187,8 +196,6 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Image Folder")
         if not folder:
             return
-        from annotis.application.image_loader import load_folder
-
         images = load_folder(Path(folder))
         if not images:
             QMessageBox.warning(self, "No images", "No supported images found.")
@@ -216,8 +223,14 @@ class MainWindow(QMainWindow):
         self._current_idx = idx
         record = self._session.images[idx]
         pixmap = QPixmap(str(record.path))
-        from PyQt6.QtWidgets import QGraphicsPixmapItem
-
+        if pixmap.isNull():
+            QMessageBox.critical(
+                self,
+                "Error Loading Image",
+                f"Cannot load image: {record.path}\n\nFile may be corrupted, "
+                "deleted, or in an unsupported format.",
+            )
+            return
         self._canvas.load_pixmap(QGraphicsPixmapItem(pixmap))
         self._refresh_canvas_annotations()
         self._refresh_ann_list()
@@ -406,9 +419,7 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.critical(self, "Export failed", str(exc))
 
-    def _ask_project_name(self) -> tuple[str, bool]:
-        from PyQt6.QtWidgets import QInputDialog
-
+    def _ask_project_name(self) -> tuple[str, bool | None]:
         name, ok = QInputDialog.getText(
             self,
             "Project name",

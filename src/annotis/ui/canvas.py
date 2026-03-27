@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 
 logger = logging.getLogger(__name__)
 
-_PALETTE = [
+_PALETTE = (
     "#e6194b",
     "#3cb44b",
     "#4363d8",
@@ -33,7 +33,7 @@ _PALETTE = [
     "#bfef45",
     "#fabed4",
     "#469990",
-]
+)
 
 
 class AnnotationCanvas(QGraphicsView):

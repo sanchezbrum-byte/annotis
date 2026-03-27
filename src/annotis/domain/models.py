@@ -108,13 +108,21 @@ class QCMetrics:
     noise_estimate: float = 0.0  # Immerkaer (1996) σ estimate
     saturation_mean: float = 0.0  # Mean HSV saturation in [0, 255]
 
+    # Sharpness threshold (Laplacian variance) for quality score normalization.
+    # Calibrated for natural images; override for domain-specific datasets.
+    _SHARPNESS_THRESHOLD: float = 1000.0
+
     def quality_score(self) -> float:
         """Return a composite quality score in [0.0, 1.0].  O(1).
 
         Heuristic: 60 % normalised sharpness + 40 % brightness balance.
-        Threshold (1000) is a reasonable default; calibrate per domain.
+
+        The sharpness threshold (_SHARPNESS_THRESHOLD) is calibrated for natural
+        images (~1000 Laplacian variance for sharp images). For medical imaging,
+        satellite imagery, or industrial inspection datasets, override this
+        threshold via the class variable.
         """
-        norm_sharpness = min(self.sharpness / 1000.0, 1.0)
+        norm_sharpness = min(self.sharpness / self._SHARPNESS_THRESHOLD, 1.0)
         brightness_balance = 1.0 - abs(self.brightness_mean - 128.0) / 128.0
         return norm_sharpness * 0.6 + brightness_balance * 0.4
 

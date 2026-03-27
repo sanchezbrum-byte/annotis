@@ -11,6 +11,8 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -40,7 +42,12 @@ def export_coco(session: Session, output_dir: Path) -> Path:
     coco = _build_coco_dict(session)
     dest = output_dir / "annotations.coco.json"
     try:
-        dest.write_text(json.dumps(coco, indent=2, default=str), encoding="utf-8")
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, dir=str(output_dir), encoding="utf-8"
+        ) as tmp:
+            tmp.write(json.dumps(coco, indent=2, default=str))
+            tmp_path = tmp.name
+        os.replace(tmp_path, str(dest))
     except OSError as exc:
         raise ExportError(f"Cannot write COCO file: {exc}") from exc
     return dest
@@ -195,9 +202,17 @@ def _record_to_yolo_lines(
 
     for ann in record.annotations:
         if ann.bbox is None:
+            logger.warning(
+                f"Skipping annotation {ann.annotation_id} in {record.path.name}: "
+                "no bounding box"
+            )
             continue
         class_id = class_index.get(ann.class_label, -1)
         if class_id < 0:
+            logger.warning(
+                f"Skipping annotation {ann.annotation_id} in {record.path.name}: "
+                f"unknown class label '{ann.class_label}'"
+            )
             continue
         cx, cy, w, h = ann.bbox.to_yolo(img_w, img_h)
         lines.append(f"{class_id} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}")

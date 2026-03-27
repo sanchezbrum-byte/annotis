@@ -17,6 +17,7 @@ without OpenCV being installed.
 from __future__ import annotations
 
 import logging
+import struct
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -76,7 +77,7 @@ def extract_metadata(path: Path) -> ImageMetadata:
             channels = len(img.getbands())
             fmt = (img.format or path.suffix.lstrip(".")).upper()
             exif_data = _extract_exif(img)
-    except Exception as exc:
+    except (ValueError, KeyError, OSError) as exc:
         raise ImageLoadError(f"Cannot open {path}: {exc}") from exc
 
     return ImageMetadata(
@@ -193,7 +194,7 @@ def _extract_exif(img: PILImage.Image) -> dict[str, Any]:
                     else val
                 )
         return result
-    except Exception:
+    except (ValueError, KeyError, struct.error):
         return {}
 
 
