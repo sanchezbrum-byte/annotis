@@ -15,6 +15,7 @@ import pytest
 from annotis.application.image_loader import (
     compute_qc_metrics,
     discover_images,
+    discover_images_recursive,
     extract_metadata,
     load_folder,
     load_image_record,
@@ -60,6 +61,152 @@ class TestDiscoverImages:
     ) -> None:
         with pytest.raises(ValueError):
             discover_images(tmp_jpeg)
+
+
+# ---------------------------------------------------------------------------
+# discover_images_recursive
+# ---------------------------------------------------------------------------
+
+
+class TestDiscoverImagesRecursive:
+    """Tests for recursive image discovery across all subfolders."""
+
+    def test_discover_images_recursive_with_root_folder_returns_images_in_root_only(
+        self, tmp_image_folder: Path
+    ) -> None:
+        """Single root folder with images is discovered correctly."""
+        # Arrange
+        root = tmp_image_folder
+
+        # Act
+        paths = discover_images_recursive(root)
+
+        # Assert
+        assert len(paths) == 3
+        assert all(p.suffix.lower() in {".jpg", ".jpeg"} for p in paths)
+
+    def test_discover_images_recursive_with_subfolders_returns_all_images(
+        self, tmp_path: Path
+    ) -> None:
+        """Images in nested subfolders are discovered recursively."""
+        # Arrange: Create nested folder structure with images
+        from PIL import Image as PILImage
+
+        subfolder1 = tmp_path / "subfolder1" / "nested"
+        subfolder1.mkdir(parents=True)
+        subfolder2 = tmp_path / "subfolder2"
+        subfolder2.mkdir()
+
+        PILImage.new("RGB", (100, 100)).save(tmp_path / "root.jpg")
+        PILImage.new("RGB", (100, 100)).save(subfolder1 / "nested.jpg")
+        PILImage.new("RGB", (100, 100)).save(subfolder2 / "sub.jpg")
+
+        # Act
+        paths = discover_images_recursive(tmp_path)
+
+        # Assert
+        assert len(paths) == 3
+        file_names = {p.name for p in paths}
+        assert file_names == {"root.jpg", "nested.jpg", "sub.jpg"}
+
+    def test_discover_images_recursive_with_nonimage_files_excludes_them(
+        self, tmp_path: Path
+    ) -> None:
+        """Non-image files are filtered out even in subfolders."""
+        # Arrange: Create mixed content in nested structure
+        from PIL import Image as PILImage
+
+        subfolder = tmp_path / "subfolder"
+        subfolder.mkdir()
+        (tmp_path / "notes.txt").write_text("not an image")
+        (subfolder / "readme.md").write_text("also not an image")
+        (tmp_path / "config.json").write_text("{}")
+        PILImage.new("RGB", (100, 100)).save(tmp_path / "image.jpg")
+        PILImage.new("RGB", (100, 100)).save(subfolder / "photo.png")
+
+        # Act
+        paths = discover_images_recursive(tmp_path)
+
+        # Assert
+        assert len(paths) == 2
+        file_names = {p.name for p in paths}
+        assert file_names == {"image.jpg", "photo.png"}
+        assert all(p.suffix.lower() in {".jpg", ".png"} for p in paths)
+
+    def test_discover_images_recursive_with_empty_directory_returns_empty_list(
+        self, tmp_path: Path
+    ) -> None:
+        """Empty directory tree returns no images."""
+        # Arrange: Create empty nested structure
+        (tmp_path / "subfolder1" / "nested").mkdir(parents=True)
+        (tmp_path / "subfolder2").mkdir()
+
+        # Act
+        paths = discover_images_recursive(tmp_path)
+
+        # Assert
+        assert paths == []
+
+    def test_discover_images_recursive_with_nonexistent_path_raises_error(
+        self,
+    ) -> None:
+        """Nonexistent path raises ValueError with descriptive message."""
+        # Arrange
+        nonexistent = Path("/nonexistent/path/that/does/not/exist")
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="valid directory"):
+            discover_images_recursive(nonexistent)
+
+    def test_discover_images_recursive_with_file_path_raises_error(
+        self, tmp_jpeg: Path
+    ) -> None:
+        """File path instead of directory raises ValueError."""
+        # Arrange
+        file_path = tmp_jpeg
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="valid directory"):
+            discover_images_recursive(file_path)
+
+    def test_discover_images_recursive_returns_sorted_paths(
+        self, tmp_path: Path
+    ) -> None:
+        """Returned paths are sorted alphabetically."""
+        # Arrange: Create images with names that test sorting
+        from PIL import Image as PILImage
+
+        PILImage.new("RGB", (100, 100)).save(tmp_path / "zebra.jpg")
+        PILImage.new("RGB", (100, 100)).save(tmp_path / "apple.jpg")
+        PILImage.new("RGB", (100, 100)).save(tmp_path / "monkey.jpg")
+
+        # Act
+        paths = discover_images_recursive(tmp_path)
+
+        # Assert
+        assert len(paths) == 3
+        names = [p.name for p in paths]
+        assert names == ["apple.jpg", "monkey.jpg", "zebra.jpg"]
+
+    def test_discover_images_recursive_with_deeply_nested_folders_finds_all_images(
+        self, tmp_path: Path
+    ) -> None:
+        """Deep nesting of folders does not prevent discovery."""
+        # Arrange: Create deeply nested structure
+        from PIL import Image as PILImage
+
+        deep_path = tmp_path / "a" / "b" / "c" / "d" / "e"
+        deep_path.mkdir(parents=True)
+        PILImage.new("RGB", (100, 100)).save(deep_path / "deep.jpg")
+        PILImage.new("RGB", (100, 100)).save(tmp_path / "root.jpg")
+
+        # Act
+        paths = discover_images_recursive(tmp_path)
+
+        # Assert
+        assert len(paths) == 2
+        file_names = {p.name for p in paths}
+        assert file_names == {"root.jpg", "deep.jpg"}
 
 
 # ---------------------------------------------------------------------------

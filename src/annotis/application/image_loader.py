@@ -56,6 +56,30 @@ def discover_images(folder: Path) -> list[Path]:
     return sorted(paths)
 
 
+def discover_images_recursive(folder: Path) -> list[Path]:
+    """Return a sorted list of image paths in *folder* and all subfolders.
+
+    Scans recursively through all subdirectories. O(n log n) where n = all files.
+
+    Args:
+        folder: Root directory to scan.
+
+    Returns:
+        Alphabetically sorted list of absolute image file paths from all subdirs.
+
+    Raises:
+        ValueError: If *folder* does not exist or is not a directory.
+    """
+    if not folder.exists() or not folder.is_dir():
+        raise ValueError(f"Not a valid directory: {folder}")
+
+    paths: list[Path] = []
+    for item in folder.rglob("*"):
+        if item.is_file() and item.suffix.lower() in SUPPORTED_EXTENSIONS:
+            paths.append(item)
+    return sorted(paths)
+
+
 def extract_metadata(path: Path) -> ImageMetadata:
     """Extract technical metadata from *path* without loading full pixels.
 

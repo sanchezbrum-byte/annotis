@@ -38,10 +38,14 @@ from PyQt6.QtWidgets import (
 
 from annotis.adapters.session_store import SessionStore
 from annotis.application.export import export_coco, export_metadata_csv, export_yolo
-from annotis.application.image_loader import load_folder
+from annotis.application.image_loader import (
+    discover_images_recursive,
+    load_image_record,
+)
 from annotis.application.metrics import compute_annotation_stats
 from annotis.domain.models import Annotation, AnnotationType, BoundingBox, Session
 from annotis.ui.canvas import AnnotationCanvas
+from annotis.ui.folder_explorer import FolderExplorer
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +100,20 @@ class MainWindow(QMainWindow):
         self._update_status()
 
     def _build_left_panel(self) -> QWidget:
-        """Image list panel."""
+        """Folder tree and image list panel."""
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        layout.addWidget(QLabel("Images"))
+        layout.addWidget(QLabel("Folders & Images"))
+
+        # Folder tree explorer
+        self._folder_explorer = FolderExplorer(self._on_folder_selected)
+        layout.addWidget(self._folder_explorer)
+
+        # Traditional image list (for backward compatibility)
         self._image_list = QListWidget()
+        self._image_list.setVisible(False)
         layout.addWidget(self._image_list)
 
         btn_open = QPushButton("Open Folder…")
@@ -193,24 +204,64 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _on_open_folder(self) -> None:
-        folder = QFileDialog.getExistingDirectory(self, "Select Image Folder")
+        """Open a root folder and display its tree structure."""
+        folder = QFileDialog.getExistingDirectory(self, "Select Root Image Folder")
         if not folder:
             return
-        images = load_folder(Path(folder))
+
+        root_path = Path(folder)
+        self._folder_explorer.set_root_path(root_path)
+
+    def _on_folder_selected(self, folder: Path) -> None:
+        """Handle folder selection from tree: load images and create session.
+
+        Args:
+            folder: Absolute path to the selected folder.
+        """
+        # Load images from the selected folder and all subfolders
+        try:
+            images = discover_images_recursive(folder)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Error", str(exc))
+            return
+
         if not images:
-            QMessageBox.warning(self, "No images", "No supported images found.")
+            QMessageBox.warning(
+                self, "No images", f"No supported images found in {folder}"
+            )
             return
 
-        project_name, ok = self._ask_project_name()
-        if not ok:
+        # Determine project name and session folder
+        if self._session is None:
+            project_name, ok = self._ask_project_name()
+            if not ok:
+                return
+            session_folder = folder
+        else:
+            project_name = self._session.project_name
+            session_folder = self._session.image_folder
+
+        # Load images
+        loaded_images = []
+        for path in images:
+            try:
+                loaded_images.append(load_image_record(path))
+            except Exception:
+                logger.warning("Skipping unreadable image: %s", path)
+
+        if not loaded_images:
+            QMessageBox.warning(
+                self, "No readable images", f"Could not load any images from {folder}"
+            )
             return
 
+        # Create or update session
         self._session = Session(
             project_name=project_name,
-            image_folder=Path(folder),
-            images=images,
+            image_folder=session_folder,
+            images=loaded_images,
         )
-        db_path = Path(folder) / "annotis.db"
+        db_path = session_folder / "annotis.db"
         self._store = SessionStore(db_path)
 
         self._refresh_image_list()
